@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Plan">
+<title>My Plan</title>
+<style>
+:root{--bg:#0A0A0F;--surface:#13131A;--card:#1C1C26;--border:#2A2A38;--accent:#5B8EFF;--accent2:#FF6B35;--green:#2ECC71;--yellow:#F4C430;--purple:#A78BFA;--red:#FF4757;--text:#F0F0F8;--muted:#7070A0;--pill-p:#2D1B69;--pill-pt:#A78BFA;--pill-c:#0D3321;--pill-ct:#2ECC71;--pill-f:#3D1A00;--pill-ft:#FF6B35}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Display',sans-serif}
+#app{display:flex;flex-direction:column;height:100%}
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+#nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,20,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;gap:3px;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:500;transition:color 0.2s}
+.nav-btn.active{color:var(--accent)}
+.nav-icon{font-size:22px;line-height:1}
+.page{display:none;padding:0}
+.page.active{display:block}
+.page-header{padding:56px 20px 16px;background:linear-gradient(180deg,#13131A 0%,var(--bg) 100%);position:sticky;top:0;z-index:10}
+.page-title{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+.page-subtitle{font-size:13px;color:var(--muted);margin-top:3px}
+/* TODAY */
+.today-hero{margin:0 16px 16px;background:linear-gradient(135deg,#1A1A2E 0%,#16213E 100%);border:1px solid #2A2A5A;border-radius:20px;padding:20px}
+.today-date{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.today-day{font-size:24px;font-weight:700;margin-bottom:4px}
+.today-workout{display:inline-flex;align-items:center;gap:6px;background:rgba(91,142,255,0.15);border:1px solid rgba(91,142,255,0.3);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--accent);font-weight:500}
+.macro-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 16px 16px}
+.macro-tile{background:var(--card);border-radius:14px;padding:12px 8px;text-align:center;border:1px solid var(--border)}
+.macro-val{font-size:20px;font-weight:700}
+.macro-label{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
+.cal-val{color:var(--accent)}.p-val{color:var(--purple)}.c-val{color:var(--green)}.f-val{color:var(--accent2)}
+/* WEIGHT REFERENCE */
+.weight-ref{margin:0 16px 16px;background:#0D1A0D;border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:14px 16px}
+.weight-ref-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.weight-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.weight-tile{background:rgba(46,204,113,0.07);border-radius:10px;padding:8px 10px}
+.weight-food{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.weight-val{font-size:15px;font-weight:700;color:var(--green)}
+.weight-note{font-size:10px;color:var(--muted);margin-top:1px}
+/* TIMELINE */
+.section-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 20px;margin-bottom:10px}
+.timeline{padding:0 16px;position:relative}
+.tl-line{position:absolute;left:36px;top:0;bottom:0;width:1px;background:var(--border)}
+.meal-card{display:flex;gap:12px;margin-bottom:12px;position:relative}
+.meal-time-col{width:20px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:14px}
+.meal-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);flex-shrink:0;z-index:1}
+.meal-dot.done{background:var(--green)}
+.meal-dot.upcoming{background:var(--muted)}
+.meal-dot.current{background:var(--accent2);box-shadow:0 0 0 4px rgba(255,107,53,0.25)}
+.meal-body{flex:1;background:var(--card);border-radius:16px;padding:13px 14px;border:1px solid var(--border)}
+.meal-body.current-meal{border-color:var(--accent2)}
+.meal-time{font-size:11px;color:var(--muted);margin-bottom:3px}
+.meal-name{font-size:14px;font-weight:600;margin-bottom:6px}
+.meal-foods{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:8px}
+.meal-foods b{color:var(--text);font-weight:600}
+.pill-row{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:500}
+.pill-p{background:var(--pill-p);color:var(--pill-pt)}
+.pill-c{background:var(--pill-c);color:var(--pill-ct)}
+.pill-f{background:var(--pill-f);color:var(--pill-ft)}
+.pill-cal{background:#1A1A3A;color:var(--accent)}
+.supp-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(91,142,255,0.12);border:1px solid rgba(91,142,255,0.25);border-radius:20px;padding:3px 9px;font-size:10px;color:var(--accent);margin-top:6px;margin-right:4px}
+.meal-note{font-size:11px;color:var(--accent2);margin-top:6px;padding:5px 8px;background:rgba(255,107,53,0.08);border-radius:8px;border-left:2px solid var(--accent2);line-height:1.5}
+/* WORKOUT BLOCK */
+.workout-block{background:linear-gradient(135deg,#1A1200 0%,#2A1800 100%);border:1px solid rgba(244,196,48,0.3);border-radius:16px;padding:13px 14px;margin:0 16px 12px}
+.workout-label{font-size:11px;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px}
+.workout-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px}
+/* EXERCISE TABLE */
+.ex-group{margin-bottom:10px}
+.ex-group-title{font-size:10px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;opacity:0.7}
+.ex-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(244,196,48,0.1)}
+.ex-row:last-child{border:none}
+.ex-name{font-size:12px;color:var(--text);flex:1;font-weight:500}
+.ex-sets{font-size:11px;color:var(--muted);white-space:nowrap;margin-right:4px}
+.ex-weight-wrap{display:flex;align-items:center;gap:4px}
+.ex-weight{width:56px;background:rgba(244,196,48,0.08);border:1px solid rgba(244,196,48,0.2);border-radius:8px;padding:4px 6px;font-size:12px;color:var(--yellow);font-weight:600;text-align:center;-webkit-appearance:none}
+.ex-weight:focus{outline:none;border-color:var(--yellow)}
+.ex-unit{font-size:10px;color:var(--muted)}
+/* DAY TABS */
+.day-tabs{display:flex;gap:6px;padding:0 16px;overflow-x:auto;scrollbar-width:none;margin-bottom:16px}
+.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all 0.2s}
+.day-tab.active{background:var(--accent);border-color:var(--accent);color:white}
+/* GROCERY */
+.store-card{margin:0 16px 14px;background:var(--card);border-radius:20px;border:1px solid var(--border);overflow:hidden}
+.store-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.store-name{font-size:15px;font-weight:700}
+.grocery-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.grocery-item:last-child{border-bottom:none}
+.grocery-check{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.grocery-check.checked{background:var(--green);border-color:var(--green)}
+.grocery-check.checked::after{content:'✓';color:white;font-size:13px;font-weight:700}
+.grocery-info{flex:1}
+.grocery-name{font-size:13px;font-weight:500}
+.grocery-qty{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
+.grocery-price{font-size:12px;font-weight:600;color:var(--accent2);white-space:nowrap;margin-top:2px}
+.trip-header{margin:16px 16px 10px;display:flex;align-items:center;gap:10px}
+.trip-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.trip-1{background:rgba(46,204,113,0.15);color:var(--green);border:1px solid rgba(46,204,113,0.3)}
+.trip-2{background:rgba(91,142,255,0.15);color:var(--accent);border:1px solid rgba(91,142,255,0.3)}
+.trip-info{font-size:12px;color:var(--muted)}
+.budget-card{margin:0 16px 20px;background:linear-gradient(135deg,#0D2A1A 0%,#0A1F14 100%);border:1px solid rgba(46,204,113,0.3);border-radius:20px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center}
+.budget-val{font-size:22px;font-weight:700;color:var(--green)}
+.budget-label{font-size:10px;color:rgba(46,204,113,0.6);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+/* PREP */
+.prep-day{margin:0 16px 16px}
+.prep-day-header{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.prep-day-name{font-size:15px;font-weight:700}
+.prep-day-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.prep-time-badge{font-size:11px;font-weight:600;color:var(--accent2);background:rgba(255,107,53,0.12);border:1px solid rgba(255,107,53,0.25);border-radius:20px;padding:3px 10px;flex-shrink:0}
+.prep-step{background:var(--card);border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.prep-step:last-child{border-radius:0 0 16px 16px}
+.prep-num{width:26px;height:26px;border-radius:50%;background:rgba(91,142,255,0.15);border:1px solid rgba(91,142,255,0.3);color:var(--accent);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prep-num.done{background:rgba(46,204,113,0.15);border-color:rgba(46,204,113,0.3);color:var(--green)}
+.prep-step-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.prep-step-detail{font-size:11px;color:var(--muted);line-height:1.6}
+.prep-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;margin-top:5px;margin-right:4px}
+.tag-a{background:rgba(46,204,113,0.12);color:var(--green)}
+.tag-c{background:rgba(91,142,255,0.12);color:var(--accent)}
+.tag-both{background:rgba(167,139,250,0.12);color:var(--purple)}
+/* NOTIF */
+.notif-card{margin:0 16px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.notif-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.notif-info{flex:1}
+.notif-title{font-size:13px;font-weight:600}
+.notif-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.notif-time{font-size:12px;font-weight:600;color:var(--accent)}
+.toggle{width:44px;height:26px;background:var(--green);border-radius:13px;position:relative;cursor:pointer;flex-shrink:0;transition:background 0.2s}
+.toggle.off{background:var(--border)}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:3px;transition:transform 0.2s}
+.toggle:not(.off)::after{transform:translateX(18px)}
+.notif-section-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:16px 20px 8px}
+.enable-btn{margin:0 16px 16px;background:var(--accent);border-radius:16px;padding:16px;text-align:center;cursor:pointer;font-size:15px;font-weight:600;color:white;border:none;width:calc(100% - 32px)}
+.enable-btn.granted{background:var(--green)}
+.notif-status{margin:0 16px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;text-align:center;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="content">
+
+<!-- TODAY -->
+<div class="page active" id="page-today">
+  <div class="page-header">
+    <div class="page-title">Today</div>
+    <div class="page-subtitle" id="today-subtitle">Loading...</div>
+  </div>
+  <div class="today-hero">
+    <div class="today-date" id="hero-date"></div>
+    <div class="today-day" id="hero-day"></div>
+    <div class="today-workout" id="hero-workout"></div>
+  </div>
+  <div class="macro-strip">
+    <div class="macro-tile"><div class="macro-val cal-val">2,176</div><div class="macro-label">Cal</div></div>
+    <div class="macro-tile"><div class="macro-val p-val">195g</div><div class="macro-label">Protein</div></div>
+    <div class="macro-tile"><div class="macro-val c-val">169g</div><div class="macro-label">Carbs</div></div>
+    <div class="macro-tile"><div class="macro-val f-val">80g</div><div class="macro-label">Fat</div></div>
+  </div>
+  <div class="weight-ref">
+    <div class="weight-ref-title">⚖️ Weigh RAW / DRY before cooking</div>
+    <div class="weight-grid">
+      <div class="weight-tile"><div class="weight-food">🥩 Ground Beef</div><div class="weight-val">113g raw</div><div class="weight-note">Weigh before pan every night</div></div>
+      <div class="weight-tile"><div class="weight-food">🍠 Sweet Potato</div><div class="weight-val">130g raw</div><div class="weight-note">Wed: 100g · weigh before microwave</div></div>
+      <div class="weight-tile"><div class="weight-food">🍗 Chicken</div><div class="weight-val">142g × portions</div><div class="weight-note">Weigh full batch (994g) Sunday, split 7 equal</div></div>
+      <div class="weight-tile"><div class="weight-food">🍚 Rice (dry)</div><div class="weight-val">65g dry</div><div class="weight-note">Weigh full batch (455g) Sunday, split 7 equal · Wed: 85g</div></div>
+      <div class="weight-tile"><div class="weight-food">🥦 Broccoli M4</div><div class="weight-val">135g frozen</div><div class="weight-note">Straight from bag, steam</div></div>
+      <div class="weight-tile"><div class="weight-food">🥦 Broccoli M5</div><div class="weight-val">90g frozen</div><div class="weight-note">Straight from bag, steam</div></div>
+      <div class="weight-tile"><div class="weight-food">🥚 Eggs</div><div class="weight-val">3 large (150g)</div><div class="weight-note">No scale needed — just 3 eggs</div></div>
+      <div class="weight-tile"><div class="weight-food">🥜 Almonds</div><div class="weight-val">71g</div><div class="weight-note">Pre-weigh 5 bags Sunday</div></div>
+    </div>
+  </div>
+  <div class="section-title">Meal Schedule</div>
+  <div class="timeline" id="today-timeline"><div class="tl-line"></div></div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="page-header">
+    <div class="page-title">Schedule</div>
+    <div class="page-subtitle">Meals + full workout with weights</div>
+  </div>
+  <div class="day-tabs">
+    <div class="day-tab active" onclick="showDay('mon',this)">Mon</div>
+    <div class="day-tab" onclick="showDay('tue',this)">Tue</div>
+    <div class="day-tab" onclick="showDay('wed',this)">Wed</div>
+    <div class="day-tab" onclick="showDay('thu',this)">Thu</div>
+    <div class="day-tab" onclick="showDay('fri',this)">Fri</div>
+    <div class="day-tab" onclick="showDay('sat',this)">Sat</div>
+    <div class="day-tab" onclick="showDay('sun',this)">Sun</div>
+  </div>
+  <div id="schedule-content"></div>
+</div>
+
+<!-- GROCERY -->
+<div class="page" id="page-grocery">
+  <div class="page-header">
+    <div class="page-title">Groceries</div>
+    <div class="page-subtitle">Tap items to check off</div>
+  </div>
+  <div class="budget-card">
+    <div><div class="budget-val">$97</div><div class="budget-label">Trip 1</div></div>
+    <div><div class="budget-val">$96</div><div class="budget-label">Trip 2</div></div>
+    <div><div class="budget-val">$193</div><div class="budget-label">Monthly</div></div>
+  </div>
+  <div class="trip-header"><div class="trip-badge trip-1">Trip 1</div><div class="trip-info">Day 1 of month — days 1–15</div></div>
+  <div id="grocery-trip1"></div>
+  <div class="trip-header"><div class="trip-badge trip-2">Trip 2</div><div class="trip-info">Day 15 of month — days 16–30</div></div>
+  <div id="grocery-trip2"></div>
+</div>
+
+<!-- PREP -->
+<div class="page" id="page-prep">
+  <div class="page-header">
+    <div class="page-title">Prep</div>
+    <div class="page-subtitle">Tap steps to mark done</div>
+  </div>
+  <div id="prep-content"></div>
+</div>
+
+<!-- REMINDERS -->
+<div class="page" id="page-notif">
+  <div class="page-header">
+    <div class="page-title">Reminders</div>
+    <div class="page-subtitle">Daily meal and workout alerts</div>
+  </div>
+  <div id="notif-status-bar" class="notif-status">Tap below to enable reminders</div>
+  <button class="enable-btn" id="enable-notif-btn" onclick="requestNotifications()">Enable Reminders</button>
+  <div class="notif-section-title">Meal Reminders</div>
+  <div class="notif-card" id="meal-notifs"></div>
+  <div class="notif-section-title">Prep Reminders</div>
+  <div class="notif-card" id="prep-notifs"></div>
+</div>
+
+</div>
+<div id="nav">
+  <button class="nav-btn active" onclick="showPage('today',this)"><div class="nav-icon">🏠</div>Today</button>
+  <button class="nav-btn" onclick="showPage('schedule',this)"><div class="nav-icon">📋</div>Schedule</button>
+  <button class="nav-btn" onclick="showPage('grocery',this)"><div class="nav-icon">🛒</div>Grocery</button>
+  <button class="nav-btn" onclick="showPage('prep',this)"><div class="nav-icon">🍳</div>Prep</button>
+  <button class="nav-btn" onclick="showPage('notif',this)"><div class="nav-icon">🔔</div>Reminders</button>
+</div>
+</div>
+
+<script>
+// ── WORKOUT DATA (sets/reps/editable weight) ─────────────────────────────────
+const WORKOUTS = {
+  mon: {
+    label:'🟦 PUSH DAY', time:'4:00–5:30 PM',
+    groups:[
+      { name:'Chest', exercises:[
+        { name:'Incline Bench Press', sets:'2 sets to failure', wkey:'incline_bench', default:185 },
+        { name:'Pec Flys', sets:'2 sets to failure', wkey:'pec_fly', default:105 },
+        { name:'Downward Pec Flys', sets:'1 set to failure', wkey:'down_pec_fly', default:60 },
+        { name:'Push-ups', sets:'1 set to failure', wkey:'pushups', default:0, unit:'bodyweight' },
+      ]},
+      { name:'Shoulders', exercises:[
+        { name:'Shoulder Press', sets:'2 sets to failure', wkey:'shoulder_press', default:160 },
+        { name:'Cable Lateral Raise', sets:'2 sets to failure', wkey:'cable_lat_raise', default:40 },
+        { name:'Cable Front Raise', sets:'1 set to failure', wkey:'cable_front_raise', default:40 },
+      ]},
+      { name:'Triceps', exercises:[
+        { name:'EZ Bar Tricep Extensions', sets:'2 sets to failure', wkey:'ez_tricep', default:150 },
+        { name:'Overhead Triceps', sets:'2 sets to failure', wkey:'overhead_tri', default:100 },
+        { name:'Single Arm Tricep Extension', sets:'1 set to failure', wkey:'single_tri', default:50 },
+      ]},
+    ]
+  },
+  tue: {
+    label:'🟩 PULL DAY', time:'7:00–8:00 PM',
+    groups:[
+      { name:'Back', exercises:[
+        { name:'Lat Pulldown / Pull-ups', sets:'3 sets to failure', wkey:'lat_pull', default:0, unit:'bodyweight/lbs' },
+        { name:'Single-Arm Lat Pulldown', sets:'1 set to failure', wkey:'single_lat', default:130 },
+        { name:'Cable Row', sets:'2 sets to failure', wkey:'cable_row', default:130 },
+        { name:'T-Bar Row', sets:'1 set to failure', wkey:'tbar_row', default:115 },
+        { name:'Reverse Pec Fly', sets:'1 set to failure', wkey:'rev_pec', default:70 },
+        { name:'Face Pull', sets:'1 set to failure', wkey:'face_pull', default:90 },
+      ]},
+      { name:'Biceps', exercises:[
+        { name:'Good Stretch Regular Curls', sets:'2 sets to failure', wkey:'reg_curl', default:20, unit:'lbs each' },
+        { name:'Single-Arm Preacher Curls', sets:'2 sets to failure', wkey:'preacher', default:0, unit:'lbs' },
+        { name:'EZ Bar Cable Curls', sets:'1 set to failure', wkey:'ez_curl', default:0, unit:'lbs' },
+      ]},
+    ]
+  },
+  wed: {
+    label:'🟧 BASKETBALL', time:'4:00–5:00 PM',
+    groups:[
+      { name:'Cardio', exercises:[
+        { name:'Full Court Run', sets:'30–60 min', wkey:'bball_dur', default:45, unit:'min' },
+      ]},
+    ]
+  },
+  thu: {
+    label:'🟨 UPPER DAY', time:'7:00–8:00 PM',
+    groups:[
+      { name:'Chest', exercises:[
+        { name:'Upper Bench Press', sets:'2 sets to failure', wkey:'upper_bench', default:185 },
+        { name:'Pec Flys', sets:'1 set to failure', wkey:'thu_pec_fly', default:105 },
+      ]},
+      { name:'Back', exercises:[
+        { name:'Lat Pulldown / Pull-ups', sets:'2 sets to failure', wkey:'thu_lat', default:0, unit:'bodyweight/lbs' },
+        { name:'Cable Row', sets:'2 sets to failure', wkey:'thu_row', default:130 },
+      ]},
+      { name:'Shoulders', exercises:[
+        { name:'Rear Delt Fly', sets:'2 sets to failure', wkey:'rear_delt', default:0, unit:'lbs' },
+        { name:'Cable Lateral / Deltoid Raise', sets:'1 set to failure', wkey:'thu_lat_raise', default:40 },
+      ]},
+      { name:'Arms', exercises:[
+        { name:'Long EZ Bar Cable Curls', sets:'1 set to failure', wkey:'thu_ez_curl', default:0, unit:'lbs' },
+        { name:'Overhead Triceps', sets:'1 set to failure', wkey:'thu_overhead_tri', default:100 },
+      ]},
+    ]
+  },
+  fri: {
+    label:'🟪 LOWER DAY', time:'4:00–5:30 PM',
+    groups:[
+      { name:'Legs', exercises:[
+        { name:'Loaded Smith Squats', sets:'2 sets to failure', wkey:'smith_squat', default:0, unit:'lbs' },
+        { name:'Leg Hexagon', sets:'2 sets to failure', wkey:'leg_hex', default:0, unit:'lbs' },
+        { name:'Leg Extensions', sets:'2 sets to failure', wkey:'leg_ext', default:0, unit:'lbs' },
+        { name:'Leg Curls', sets:'2 sets to failure', wkey:'leg_curl', default:0, unit:'lbs' },
+        { name:'Ankle Pulls', sets:'2 sets', wkey:'ankle_pull', default:0, unit:'lbs' },
+        { name:'Leg Holds', sets:'30 sec × 2', wkey:'leg_hold', default:0, unit:'lbs' },
+      ]},
+    ]
+  },
+  sat:{ label:'🛒 REST + SHOP', time:'Active Recovery', groups:[] },
+  sun:{ label:'🍳 REST + COOK', time:'Cook Day', groups:[] },
+};
+
+// ── MEAL DATA ────────────────────────────────────────────────────────────────
+function m1(){ return {time:'7:00 AM',name:'Meal 1 — Egg, Tuna & Cheese Scramble',foods:'<b>3 eggs (150g)</b> · <b>1 can tuna drained (142g)</b> · <b>shredded cheese (21g)</b> · thin coat beef tallow (~5g)',p:51,c:2,f:22,cal:420,supps:['Zinc+Copper','Omega-3']}; }
+function m2(label){ return {time:'12:00 PM',name:'Meal 2 — Almonds + Kiwis'+(label?' ('+label+')':''),foods:'<b>almonds (71g)</b> · <b>2 kiwis (150g total)</b> — eat skin on',p:14,c:26,f:35,cal:430}; }
+function shake(extra){ return {time:'3:00 PM',name:'Meal 3 — Pre-'+(extra||'Lift')+' Shake',foods:'<b>1.5 scoops ON whey (47g)</b> · 350ml cold water · <b>'+(extra==='Hoop'?'2 bananas (240g)':'1 banana (120g)')+'</b>',p:extra==='Hoop'?42:41,c:extra==='Hoop'?61:34,f:3,cal:extra==='Hoop'?370:315,supps:['Creatine 5g'],note:extra==='Hoop'?'Extra banana — basketball burns more glycogen than lifting':null}; }
+function chickenRice(wedExtra){ return {time:'6:00 PM',name:'Meal 4 — Chicken, Rice & Broccoli',foods:'<b>chicken breast (142g raw → pre-cooked Sunday)</b> · <b>white rice ('+(wedExtra?'85g':'65g')+' dry → pre-cooked Sunday)</b> · <b>broccoli frozen (135g)</b> — steam from frozen',p:51,c:wedExtra?51:34,f:5,cal:wedExtra?440:390,note:'Chicken & rice pre-cooked in bulk Sunday. Weigh full batch raw Sunday: 994g chicken, '+(wedExtra?'595g':'455g')+' dry rice. Split into 7 equal containers.'}; }
+function cShakeMeal(){ return {time:'3:00 PM',name:'Meal 3 — Shake + Chicken/Rice (2nd Lunch)',foods:'<b>1.5 scoops ON whey (47g)</b> + 350ml water + <b>1 banana (120g)</b><br><b>chicken (142g raw → pre-cooked)</b> · <b>rice dry (65g → pre-cooked)</b> · <b>broccoli frozen (135g)</b>',p:92,c:68,f:8,cal:705,supps:['Creatine 5g'],note:'Fuels tonight\'s lift + replaces post-workout meal. Chicken & rice pre-cooked Sunday — bring in container.'}; }
+function beef(wedSmall){ return {time:'8:00 PM',name:'Meal 5 — Beef, Sweet Potato & Shake',foods:'<b>85/15 ground beef raw ('+(wedSmall?'113g':'113g')+')</b> — weigh raw before pan · <b>sweet potato raw ('+(wedSmall?'100g':'130g')+')</b> — weigh raw before microwave · <b>broccoli frozen (90g)</b> · <b>1 scoop ON whey (31g)</b> + 300ml water',p:38,c:wedSmall?45:53,f:15,cal:wedSmall?516:621,note:'Weigh beef & sweet potato RAW every night before cooking. These two you weigh daily.'}; }
+function beefC(){ return {time:'8:00 PM',name:'Meal 4 — Beef, Sweet Potato & Shake',foods:'<b>85/15 ground beef raw (113g)</b> — weigh raw before pan · <b>sweet potato raw (130g)</b> — weigh raw before microwave · <b>broccoli frozen (90g)</b> · <b>1 scoop ON whey (31g)</b> + 300ml water',p:38,c:53,f:15,cal:621,note:'Weigh beef & sweet potato RAW every night before cooking.'}; }
+
+const DAYS = {
+  mon:{ name:'Monday', workout:'🟦 Push Day', meals:[m1(),m2(),shake(),chickenRice(),beef()] },
+  tue:{ name:'Tuesday', workout:'🟩 Pull Day', meals:[m1(),m2('1st Lunch'),cShakeMeal(),beefC()] },
+  wed:{ name:'Wednesday', workout:'🟧 Basketball', meals:[m1(),m2(),shake('Hoop'),chickenRice(true),beef(true)] },
+  thu:{ name:'Thursday', workout:'🟨 Upper Day', meals:[m1(),m2('1st Lunch'),cShakeMeal(),beefC()] },
+  fri:{ name:'Friday', workout:'🟪 Lower Day', meals:[m1(),m2(),shake(),chickenRice(),beef()] },
+  sat:{ name:'Saturday', workout:'🛒 Shop + Rest', meals:[m1(),m2(),shake(),chickenRice(),beef()] },
+  sun:{ name:'Sunday', workout:'🍳 Cook Day', meals:[m1(),m2(),shake(),chickenRice(),beef()] },
+};
+
+// ── WEIGHT STORAGE ───────────────────────────────────────────────────────────
+function loadWeights(){ try{ return JSON.parse(localStorage.getItem('liftWeights')||'{}'); }catch(e){ return {}; } }
+function saveWeights(w){ try{ localStorage.setItem('liftWeights',JSON.stringify(w)); }catch(e){} }
+function getWeight(key,def){ const w=loadWeights(); return w[key]!==undefined?w[key]:def; }
+function setWeight(key,val){ const w=loadWeights(); w[key]=val; saveWeights(w); }
+
+// ── BUILD WORKOUT HTML ───────────────────────────────────────────────────────
+function buildWorkoutHTML(key){
+  const wkt = WORKOUTS[key];
+  if(!wkt||!wkt.groups||wkt.groups.length===0){
+    if(key==='sat') return `<div class="workout-block"><div class="workout-label">${wkt.time}</div><div class="workout-name">${wkt.label}</div><div style="font-size:12px;color:rgba(244,196,48,0.7)">Hit all 3 stores. Portion & freeze all chicken and beef. Pre-weigh 5 almond bags. Store kiwis in fridge.</div></div>`;
+    if(key==='sun') return `<div class="workout-block"><div class="workout-label">${wkt.time}</div><div class="workout-name">${wkt.label}</div><div style="font-size:12px;color:rgba(244,196,48,0.7)">Cook full chicken batch (994g raw → 7 portions). Cook full rice batch (455g dry → 7 portions). Pre-measure whey for Tue + Thu.</div></div>`;
+    return '';
+  }
+  let html = `<div class="workout-block"><div class="workout-label">⏰ ${wkt.time}</div><div class="workout-name">${wkt.label}</div>`;
+  wkt.groups.forEach(g=>{
+    html += `<div class="ex-group"><div class="ex-group-title">${g.name}</div>`;
+    g.exercises.forEach(ex=>{
+      const isBW = ex.unit==='bodyweight';
+      const curVal = getWeight(ex.wkey, ex.default);
+      const unit = ex.unit||'lbs';
+      html += `<div class="ex-row">
+        <div style="flex:1">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-sets">${ex.sets}</div>
+        </div>
+        ${isBW ? `<span class="ex-unit" style="color:var(--purple);font-size:11px;font-weight:600">bodyweight</span>` :
+        `<div class="ex-weight-wrap">
+          <input class="ex-weight" type="number" value="${curVal}" onchange="setWeight('${ex.wkey}',this.value)" inputmode="numeric" placeholder="0">
+          <span class="ex-unit">${unit}</span>
+        </div>`}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ── BUILD MEAL HTML ──────────────────────────────────────────────────────────
+function buildMealCard(meal, status){
+  const dotCls = status==='done'?'done':status==='current'?'current':'upcoming';
+  const bodyCls = status==='current'?'meal-body current-meal':'meal-body';
+  let suppsHtml = '';
+  if(meal.supps) meal.supps.forEach(s=>suppsHtml+=`<span class="supp-badge">💊 ${s}</span>`);
+  const noteHtml = meal.note ? `<div class="meal-note">${meal.note}</div>` : '';
+  return `<div class="meal-card">
+    <div class="meal-time-col"><div class="meal-dot ${dotCls}"></div></div>
+    <div class="${bodyCls}">
+      <div class="meal-time">${meal.time}</div>
+      <div class="meal-name">${meal.name}</div>
+      <div class="meal-foods">${meal.foods}</div>
+      <div class="pill-row">
+        <span class="pill pill-p">${meal.p}g P</span>
+        <span class="pill pill-c">${meal.c}g C</span>
+        <span class="pill pill-f">${meal.f}g F</span>
+        <span class="pill pill-cal">${meal.cal} cal</span>
+      </div>
+      ${suppsHtml}
+      ${noteHtml}
+    </div>
+  </div>`;
+}
+
+const DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
+function getTodayKey(){ return DAY_KEYS[new Date().getDay()]; }
+function getCurrentMealIndex(meals){
+  const now=new Date(), mins=now.getHours()*60+now.getMinutes();
+  let cur=-1;
+  meals.forEach((m,i)=>{
+    const[t,period]=m.time.split(' ');
+    let[h,mn]=t.split(':').map(Number);
+    if(period==='PM'&&h!==12)h+=12;
+    if(period==='AM'&&h===12)h=0;
+    if(mins>=h*60+(mn||0))cur=i;
+  });
+  return cur;
+}
+
+function initToday(){
+  const key=getTodayKey(), day=DAYS[key], now=new Date();
+  document.getElementById('today-subtitle').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('hero-date').textContent=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+  document.getElementById('hero-day').textContent=day.name;
+  document.getElementById('hero-workout').textContent=day.workout;
+  const curIdx=getCurrentMealIndex(day.meals);
+  let html='';
+  day.meals.forEach((m,i)=>{
+    const st=i<curIdx?'done':i===curIdx?'current':'upcoming';
+    html+=buildMealCard(m,st);
+  });
+  const tl=document.getElementById('today-timeline');
+  tl.innerHTML='<div class="tl-line"></div>'+html;
+}
+
+function buildDayContent(key){
+  const day=DAYS[key];
+  const curIdx=getTodayKey()===key?getCurrentMealIndex(day.meals):-1;
+  let html=buildWorkoutHTML(key);
+  html+=`<div class="timeline"><div class="tl-line"></div>`;
+  day.meals.forEach((m,i)=>{
+    const st=curIdx===-1?'upcoming':i<curIdx?'done':i===curIdx?'current':'upcoming';
+    html+=buildMealCard(m,st);
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function initSchedule(){ showDay('mon',document.querySelector('.day-tab')); }
+function showDay(key,el){
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('schedule-content').innerHTML=buildDayContent(key);
+}
+
+// ── GROCERY ──────────────────────────────────────────────────────────────────
+const G1=[
+  {store:'Costco',items:[
+    {name:'Kirkland Chicken Breast',qty:'6–7 lb pack — weigh full batch raw Sunday (994g), portion into 7 equal containers after cooking',price:'~$22'},
+    {name:'Kirkland 85/15 Ground Beef',qty:'6 lb pack — portion into 113g raw bags, freeze all. Weigh & cook one nightly.',price:'~$22'},
+    {name:'Frozen Broccoli',qty:'5–6 lb bag — 135g per M4, 90g per M5. No thawing needed, straight to microwave.',price:'~$10'},
+    {name:'ON Whey Protein 5 lb',qty:'⭐ BUY ONCE — full month at 2.5 scoops/day',price:'~$45'},
+    {name:'Kirkland Almonds 3 lb',qty:'⭐ BUY ONCE — pre-weigh 5x71g bags Sunday',price:'~$18'},
+  ]},
+  {store:'Walmart',items:[
+    {name:'Chunk Light Tuna 5oz cans',qty:'15 cans — 1 can (142g drained) daily',price:'~$15'},
+    {name:'Eggs',qty:'2.5 dozen — 3 large eggs (150g) daily',price:'~$10'},
+    {name:'Great Value Shredded Cheese 14oz',qty:'21g daily — lasts ~18 days',price:'~$3'},
+  ]},
+  {store:'WinCo',items:[
+    {name:'White Rice 10 lb bag',qty:'⭐ BUY ONCE — weigh full batch dry Sunday (455g), cook, split 7 equal. Wed batch: 595g dry.',price:'~$8'},
+    {name:'Sweet Potatoes',qty:'~4.5 lb — weigh 130g raw each night before microwaving (Wed: 100g)',price:'~$4'},
+    {name:'Bananas',qty:'10 now — each banana ~120g. Grab 4–5 more mid-week.',price:'~$2'},
+    {name:'Kiwis',qty:'30 kiwis — 2 daily (150g), eat skin on',price:'~$9'},
+  ]},
+];
+const G2=[
+  {store:'Costco',items:[
+    {name:'Kirkland Chicken Breast',qty:'6–7 lb — same Sunday batch method. Thaw Trip 1 frozen portions first.',price:'~$22'},
+    {name:'Kirkland 85/15 Ground Beef',qty:'Only if running low on 113g frozen portions',price:'~$22'},
+    {name:'Frozen Broccoli',qty:'Fresh 5–6 lb bag for days 16–30',price:'~$10'},
+    {name:'ON Whey / Almonds',qty:'✗ DO NOT REBUY — Trip 1 covers full month',price:'—'},
+  ]},
+  {store:'Walmart',items:[
+    {name:'Chunk Light Tuna 5oz cans',qty:'15 cans — days 16–30',price:'~$15'},
+    {name:'Eggs',qty:'2.5 dozen — days 16–30',price:'~$10'},
+    {name:'Shredded Cheese',qty:'Only if Trip 1 bag ran out',price:'~$3'},
+  ]},
+  {store:'WinCo',items:[
+    {name:'Sweet Potatoes',qty:'~4.5 lb — 130g raw nightly (Wed 100g)',price:'~$4'},
+    {name:'Bananas',qty:'10 bananas — grab more midway',price:'~$3'},
+    {name:'Kiwis',qty:'30 kiwis — days 16–30',price:'~$9'},
+    {name:'White Rice',qty:'✗ Check bag — only restock if nearly empty',price:'—'},
+  ]},
+];
+
+function buildGrocery(data,id){
+  let html='';
+  data.forEach(store=>{
+    html+=`<div class="store-card"><div class="store-header"><div class="store-name">${store.store}</div></div>`;
+    store.items.forEach((item,i)=>{
+      const gid=`g-${id}-${store.store}-${i}`;
+      html+=`<div class="grocery-item" onclick="toggleCheck('${gid}')"><div class="grocery-check" id="${gid}"></div><div class="grocery-info"><div class="grocery-name">${item.name}</div><div class="grocery-qty">${item.qty}</div></div><div class="grocery-price">${item.price}</div></div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById(id).innerHTML=html;
+}
+function toggleCheck(id){ document.getElementById(id).classList.toggle('checked'); }
+
+// ── PREP ─────────────────────────────────────────────────────────────────────
+const PREP=[
+  {day:'Saturday — Shop + Freeze',sub:'All three stores + portioning',time:'~2.5 hrs',steps:[
+    {title:'Grocery run — Costco → Walmart → WinCo',detail:'All 3 in one morning. Done by 10:30am.',tags:[]},
+    {title:'Portion & freeze ALL ground beef immediately',detail:'Weigh out 113g raw portions (~24 total from 6 lb pack). Zip bag each. Freeze all. Pull one out each night to thaw for next day.',tags:['both']},
+    {title:'Portion & freeze ALL chicken breast raw',detail:'Weigh out 142g raw portions (~20 total). Zip bag each. Freeze raw — do NOT cook today. You cook in bulk Sunday.',tags:['a','c']},
+    {title:'Pre-weigh almond bags for the week',detail:'Weigh 5 bags of 71g almonds. Store at room temp. One per work day, grab and go.',tags:['both']},
+    {title:'Kiwis in fridge, bananas on counter',detail:'Kiwis last 2 weeks cold. Buy only 10 bananas now — grab more mid-week as they ripen.',tags:[]},
+    {title:'Saturday night — pull Sunday chicken from freezer',detail:'Move 7 chicken portions (142g each) from freezer to fridge. Thaw overnight for Sunday cook.',tags:[]},
+  ]},
+  {day:'Sunday — Cook Day',sub:'Chicken + rice batch cooked for whole week',time:'~45 min',steps:[
+    {title:'Weigh & cook full chicken batch',detail:'Total raw weight: 994g (7 × 142g). Cook all in beef tallow. Once cooked, divide evenly into 7 containers by weight or by eye. Lasts Mon–Fri in fridge.',tags:['a','c']},
+    {title:'Weigh & cook full rice batch',detail:'Total dry weight: 455g (7 × 65g). Cook, then divide evenly into 7 containers. Lasts 5 days. On Wednesday cook a separate 85g portion (extra carbs).',tags:['a','c']},
+    {title:'Pre-measure whey for Tue + Thu work lunches',detail:'Measure 1.5 scoops (47g) into 2 shaker cups. Pack Tue shaker tonight. Pack Thu shaker Wednesday night.',tags:['c']},
+    {title:'Sunday night — pull Monday beef from freezer',detail:'Move one 113g ground beef portion to fridge. Set out supplements. Fill 3.5L water. Pack Monday bag (71g almonds + 2 kiwis).',tags:[]},
+  ]},
+  {day:'Every Night — 5 Min Routine',sub:'Before bed without fail',time:'5 min',steps:[
+    {title:'Pull tomorrow\'s ground beef from freezer',detail:'113g raw portion → fridge. Thaws overnight. Cook at 8pm next day. Miss this and your last meal is ruined.',tags:['both']},
+    {title:'Pack tomorrow\'s bag',detail:'A days: 71g almonds + 2 kiwis. C days: almonds + kiwis + chicken container + rice container + pre-measured whey shaker.',tags:['both']},
+    {title:'Set supplements on the counter',detail:'Zinc+copper and omega-3 visible where you cook breakfast. You will not forget them.',tags:[]},
+    {title:'Fill 3.5L water, put in fridge',detail:'Cold water ready to grab in the morning.',tags:[]},
+    {title:'Wednesday night only — extra tasks',detail:'Cook second rice batch (455g dry) for Thu/Fri. Pull Thu+Fri beef portions from freezer. Pack Thursday C-day bag.',tags:['c']},
+  ]},
+];
+
+function buildPrep(){
+  let html='';
+  PREP.forEach((pd,pi)=>{
+    html+=`<div class="prep-day"><div class="prep-day-header"><div><div class="prep-day-name">${pd.day}</div><div class="prep-day-sub">${pd.sub}</div></div><div class="prep-time-badge">${pd.time}</div></div>`;
+    pd.steps.forEach((step,si)=>{
+      const id=`prep-${pi}-${si}`;
+      const tags=step.tags.map(t=>t==='a'?`<span class="prep-tag tag-a">A Day</span>`:t==='c'?`<span class="prep-tag tag-c">C Day</span>`:`<span class="prep-tag tag-both">Both Days</span>`).join('');
+      html+=`<div class="prep-step" onclick="togglePrep('${id}',${si})"><div class="prep-num" id="${id}">${si+1}</div><div><div class="prep-step-title">${step.title}</div><div class="prep-step-detail">${step.detail}</div>${tags}</div></div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('prep-content').innerHTML=html;
+}
+function togglePrep(id,si){
+  const el=document.getElementById(id);
+  const done=el.classList.toggle('done');
+  el.textContent=done?'✓':si+1;
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+const NM=[
+  {icon:'🍳',title:'Meal 1 — Scramble',desc:'Eggs (150g) + tuna (142g) + cheese (21g)',time:'7:00 AM',id:'m1'},
+  {icon:'🥜',title:'Meal 2 — Almonds + Kiwis',desc:'71g almonds + 2 kiwis (150g)',time:'12:00 PM',id:'m2'},
+  {icon:'🥤',title:'Meal 3 — Pre-workout Shake',desc:'47g whey + water + banana + creatine',time:'3:00 PM',id:'m3'},
+  {icon:'🍗',title:'Meal 4 — Chicken + Rice',desc:'Pre-cooked chicken + rice + 135g broccoli',time:'6:00 PM',id:'m4'},
+  {icon:'🥩',title:'Meal 5 — Beef + Sweet Potato',desc:'Weigh 113g beef & 130g sweet potato RAW',time:'8:00 PM',id:'m5'},
+  {icon:'😴',title:'Bed time',desc:'8+ hours sleep — recovery starts now',time:'10:00 PM',id:'bed'},
+];
+const NP=[
+  {icon:'🛒',title:'Saturday — Grocery Run',desc:'Costco → Walmart → WinCo + portion proteins',time:'9:00 AM Sat',id:'shop'},
+  {icon:'🍳',title:'Sunday — Cook Day',desc:'Weigh & cook chicken (994g) + rice (455g)',time:'10:00 AM Sun',id:'cook'},
+  {icon:'🥩',title:'Pull beef from freezer',desc:'113g portion → fridge to thaw overnight',time:'10:00 PM daily',id:'beef'},
+  {icon:'🎒',title:'Pack tomorrow\'s bag',desc:'Almonds + kiwis (+ C-day extras)',time:'9:45 PM daily',id:'bag'},
+];
+
+function buildNotifs(){
+  let h1='',h2='';
+  NM.forEach(n=>{h1+=`<div class="notif-item"><div class="notif-icon" style="background:rgba(91,142,255,0.12)">${n.icon}</div><div class="notif-info"><div class="notif-title">${n.title}</div><div class="notif-desc">${n.desc}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="notif-time">${n.time}</div><div class="toggle" id="tog-${n.id}" onclick="toggleNotif('${n.id}')"></div></div></div>`;});
+  NP.forEach(n=>{h2+=`<div class="notif-item"><div class="notif-icon" style="background:rgba(255,107,53,0.12)">${n.icon}</div><div class="notif-info"><div class="notif-title">${n.title}</div><div class="notif-desc">${n.desc}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="notif-time">${n.time}</div><div class="toggle" id="tog-${n.id}" onclick="toggleNotif('${n.id}')"></div></div></div>`;});
+  document.getElementById('meal-notifs').innerHTML=h1;
+  document.getElementById('prep-notifs').innerHTML=h2;
+}
+function toggleNotif(id){ document.getElementById('tog-'+id).classList.toggle('off'); }
+
+async function requestNotifications(){
+  const btn=document.getElementById('enable-notif-btn'),status=document.getElementById('notif-status-bar');
+  if(!('Notification' in window)){status.textContent='⚠️ Open in Safari and save to home screen for notifications.';return;}
+  const r=await Notification.requestPermission();
+  if(r==='granted'){
+    btn.textContent='✓ Reminders Enabled';btn.classList.add('granted');
+    status.textContent='✅ Reminders enabled.';status.style.color='var(--green)';
+    document.querySelectorAll('.toggle').forEach(t=>t.classList.remove('off'));
+    [
+      {h:7,m:0,t:'🍳 Meal 1',b:'Eggs (150g) + tuna (142g) + cheese (21g) + supplements'},
+      {h:12,m:0,t:'🥜 Meal 2',b:'71g almonds + 2 kiwis'},
+      {h:15,m:0,t:'🥤 Meal 3 — Shake time',b:'47g whey + water + banana + creatine'},
+      {h:18,m:0,t:'🍗 Meal 4 — Chicken + Rice',b:'Pre-cooked container + 135g broccoli steam'},
+      {h:20,m:0,t:'🥩 Meal 5',b:'Weigh 113g beef & sweet potato (130g) RAW before cooking'},
+      {h:21,m:45,t:'🎒 Pack bag + pull beef',b:'Prep tomorrow bag, move 113g beef from freezer to fridge'},
+      {h:22,m:0,t:'😴 Bed time',b:'8 hours — fat burns, muscle repairs'},
+    ].forEach(n=>{
+      const now=new Date(),next=new Date();
+      next.setHours(n.h,n.m,0,0);
+      if(next<=now)next.setDate(next.getDate()+1);
+      setTimeout(()=>{
+        new Notification(n.t,{body:n.b});
+        setInterval(()=>new Notification(n.t,{body:n.b}),86400000);
+      },next-now);
+    });
+  } else { status.textContent='⚠️ Blocked. Go to Settings → Safari → Notifications → Allow.'; }
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('content').scrollTop=0;
+}
+
+// ── START ─────────────────────────────────────────────────────────────────────
+initToday();
+initSchedule();
+buildGrocery(G1,'grocery-trip1');
+buildGrocery(G2,'grocery-trip2');
+buildPrep();
+buildNotifs();
+setInterval(initToday,60000);
+</script>
+</body>
+</html>
